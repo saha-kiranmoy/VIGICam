@@ -91,18 +91,28 @@ class VIGICoordinator(DataUpdateCoordinator[dict[str, Any]]):
             await safe_get("target_track", self.camera.get_target_track())
 
         if self.has_openapi and self.openapi:
-            async def safe_openapi(key: str, method: str) -> None:
+            async def safe_openapi(key: str, coro) -> None:
                 try:
-                    raw = await self.openapi.call(method)
-                    results[key] = raw.get("result", {})
+                    results[key] = await coro
                 except Exception as exc:  # noqa: BLE001
-                    _LOGGER.debug("OpenAPI %s failed: %s", method, exc)
+                    _LOGGER.debug("OpenAPI fetch %s failed: %s", key, exc)
                     results[key] = {}
 
-            await safe_openapi("openapi_sd", "getSdCardStatus")
-            await safe_openapi("openapi_device", "getDeviceStatus")
-            await safe_openapi("openapi_people", "getPeopleDetectionSwitch")
-            await safe_openapi("openapi_vehicle", "getVehicleDetectionSwitch")
+            await safe_openapi("openapi_sd",           self.openapi.get_sd_card_status())
+            await safe_openapi("openapi_device",        self.openapi.get_device_status())
+            await safe_openapi("openapi_people",        self.openapi.get_people_detection_switch())
+            await safe_openapi("openapi_vehicle",       self.openapi.get_vehicle_detection_switch())
+            await safe_openapi("openapi_crossline",     self.openapi.get_crossline_detection_switch())
+            await safe_openapi("openapi_invasion",      self.openapi.get_invasion_detection_switch())
+            await safe_openapi("openapi_area_entry",    self.openapi.get_area_entry_detection_switch())
+            await safe_openapi("openapi_area_leave",    self.openapi.get_area_leave_detection_switch())
+            await safe_openapi("openapi_drop_take",     self.openapi.get_drop_and_take_detection_switch())
+            await safe_openapi("openapi_loiter",        self.openapi.get_loiter_detection_switch())
+            await safe_openapi("openapi_scene_change",  self.openapi.get_scene_change_detection_switch())
+            await safe_openapi("openapi_audio_anomaly", self.openapi.get_audio_anomaly_detection_switch())
+            await safe_openapi("openapi_record_sched",  self.openapi.get_record_schedule())
+            await safe_openapi("openapi_stream_port",   self.openapi.get_stream_port())
+            await safe_openapi("openapi_resolution",    self.openapi.get_resolution())
 
         # Update has_sd_card from live storage data on every refresh.
         storage = results.get("storage", {})
