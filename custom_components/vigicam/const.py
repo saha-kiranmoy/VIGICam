@@ -52,6 +52,57 @@ DETECTION_EVENT_SUFFIXES: frozenset[str] = frozenset({
     "last_detection",
 })
 
+# ── OpenAPI-specific suffixes ──────────────────────────────────────────────────
+
+OPENAPI_DETECTION_SUFFIXES: frozenset[str] = frozenset({
+    "crossline_detection",
+    "invasion_detection",
+    "area_entry_detection",
+    "area_leave_detection",
+    "drop_take_detection",
+    "loiter_detection",
+    "scene_change_detection",
+    "audio_anomaly_detection",
+})
+
+OPENAPI_SENSOR_SUFFIXES: frozenset[str] = frozenset({
+    "uptime",
+    "stream_port",
+    "record_schedule_mode",
+    "resolution",
+    "mic_volume",
+    "sd_record_duration",
+    "sd_oldest_recording",
+    "sd_record_capacity",
+    "sd_video_free",
+})
+
+OPENAPI_BUTTON_SUFFIXES: frozenset[str] = frozenset({
+    "soft_reset",
+    "format_sd_card",
+    "ptz_cruise_start",
+    "ptz_cruise_stop",
+    "ptz_save_preset",
+    "ptz_delete_preset",
+})
+
+# Video resolution options: label → (width, height)
+VIDEO_RESOLUTIONS: dict[str, tuple[int, int]] = {
+    "4MP (2560×1440)":  (2560, 1440),
+    "4MP (2688×1520)":  (2688, 1520),
+    "1080p (1920×1080)": (1920, 1080),
+    "720p (1280×720)":  (1280, 720),
+    "480p (720×480)":   (720, 480),
+}
+
+# Record schedule mode values → human labels
+RECORD_SCHEDULE_MODES: dict[str, str] = {
+    "always":   "Always",
+    "schedule": "Scheduled",
+    "motion":   "Motion Triggered",
+    "off":      "Disabled",
+}
+
 IMAGE_CONTROL_SUFFIXES: frozenset[str] = frozenset({
     # Numbers (key matches VIGINumberDescription.key)
     "luma", "contrast", "saturation", "chroma", "sharpness", "wd_gain", "exp_gain",

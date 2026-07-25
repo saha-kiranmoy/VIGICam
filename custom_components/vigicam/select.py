@@ -16,6 +16,8 @@ from .const import (
     DEFAULT_FEATURE_IMAGE_CONTROLS,
     DOMAIN,
     NIGHT_VISION_MODES,
+    RECORD_SCHEDULE_MODES,
+    VIDEO_RESOLUTIONS,
 )
 from .entity import VIGIEntity
 
@@ -93,6 +95,7 @@ async def async_setup_entry(
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
     coord_data = coordinator.data or {}
+    has_openapi = data.get("has_openapi", False)
     entities: list = []
 
     if coord_data.get("image_switch"):
@@ -100,6 +103,10 @@ async def async_setup_entry(
 
     if data["has_ptz"]:
         entities.append(VIGIPTZPresetSelect(coordinator, data))
+
+    if has_openapi:
+        entities.append(VIGIResolutionSelect(coordinator, data))
+        entities.append(VIGIRecordScheduleSelect(coordinator, data))
 
     if entry.options.get(CONF_FEATURE_IMAGE_CONTROLS, DEFAULT_FEATURE_IMAGE_CONTROLS):
         entities.extend(
@@ -183,3 +190,67 @@ class VIGISelect(VIGIEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         await self.entity_description.set_fn(self._entry_data["api"], option)
         await self.coordinator.async_request_refresh()
+
+
+class VIGIResolutionSelect(VIGIEntity, SelectEntity):
+    """Select video resolution via OpenAPI."""
+
+    _attr_name = "Video Resolution"
+    _attr_icon = "mdi:video-high-definition"
+    _attr_options = list(VIDEO_RESOLUTIONS.keys())
+    _attr_entity_category = None  # visible by default
+
+    @property
+    def _unique_id_suffix(self) -> str:
+        return "resolution"
+
+    @property
+    def available(self) -> bool:
+        return bool((self.coordinator.data or {}).get("openapi_resolution"))
+
+    @property
+    def current_option(self) -> str | None:
+        res = (self.coordinator.data or {}).get("openapi_resolution", {})
+        w = res.get("width")
+        h = res.get("height")
+        if not w or not h:
+            return None
+        # Match against known presets
+        for label, (pw, ph) in VIDEO_RESOLUTIONS.items():
+            if pw == w and ph == h:
+                return label
+        # Return raw if not in preset list
+        return f"{w}×{h}"
+
+    async def async_select_option(self, option: str) -> None:
+        dims = VIDEO_RESOLUTIONS.get(option)
+        if dims and self._entry_data.get("openapi"):
+            await self._entry_data["openapi"].set_resolution(dims[0], dims[1])
+            await self.coordinator.async_request_refresh()
+
+
+class VIGIRecordScheduleSelect(VIGIEntity, SelectEntity):
+    """Select recording schedule mode via OpenAPI."""
+
+    _attr_name = "Recording Schedule"
+    _attr_icon = "mdi:record-circle"
+    _attr_options = list(RECORD_SCHEDULE_MODES.values())
+
+    @property
+    def _unique_id_suffix(self) -> str:
+        return "record_schedule_mode"
+
+    @property
+    def available(self) -> bool:
+        return bool((self.coordinator.data or {}).get("openapi_record_sched"))
+
+    @property
+    def current_option(self) -> str | None:
+        mode = (self.coordinator.data or {}).get("openapi_record_sched", {}).get("mode")
+        return RECORD_SCHEDULE_MODES.get(mode)
+
+    async def async_select_option(self, option: str) -> None:
+        mode = next((k for k, v in RECORD_SCHEDULE_MODES.items() if v == option), None)
+        if mode and self._entry_data.get("openapi"):
+            await self._entry_data["openapi"].set_record_schedule({"channel": 0, "mode": mode})
+            await self.coordinator.async_request_refresh()

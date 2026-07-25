@@ -307,3 +307,220 @@ delete_audio:
           min: 101
           max: 103
           step: 1
+
+
+set_device_alias:
+  name: Set Device Alias
+  description: >
+    Set the camera's display name (alias). Shown in the VIGI app and returned
+    by getDeviceInfo. Maximum 32 characters.
+  fields:
+    entity_id:
+      name: Camera entity
+      description: The camera to rename.
+      required: true
+      selector:
+        entity:
+          domain: camera
+          integration: vigicam
+    alias:
+      name: Alias
+      description: New display name for the camera (1–32 characters).
+      required: true
+      selector:
+        text:
+
+search_system_log:
+  name: Search System Log
+  description: >
+    Search the camera's system log for entries within a time window.
+    Results are stored in the response data of the service call.
+    Use in automations to retrieve and act on log events.
+  fields:
+    entity_id:
+      name: Camera entity
+      description: The camera to query.
+      required: true
+      selector:
+        entity:
+          domain: camera
+          integration: vigicam
+    start_time:
+      name: Start Time
+      description: >
+        Start of the search window as a Unix timestamp (seconds since 1970-01-01).
+        Use template: {{ (now() - timedelta(hours=24)) | as_timestamp | int }}
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 9999999999
+          step: 1
+          mode: box
+    end_time:
+      name: End Time
+      description: >
+        End of the search window as a Unix timestamp.
+        Use template: {{ now() | as_timestamp | int }}
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 9999999999
+          step: 1
+          mode: box
+    log_type:
+      name: Log Type
+      description: Filter by log type.
+      selector:
+        select:
+          options:
+            - all
+            - alarm
+            - exception
+            - operation
+            - information
+
+set_record_schedule:
+  name: Set Recording Schedule
+  description: >
+    Change the SD card recording mode. 'always' records 24/7; 'motion' only
+    records when detection events occur; 'schedule' follows the weekly timetable
+    configured in the VIGI app; 'off' disables recording entirely.
+  fields:
+    entity_id:
+      name: Camera entity
+      description: The camera to configure.
+      required: true
+      selector:
+        entity:
+          domain: camera
+          integration: vigicam
+    mode:
+      name: Recording Mode
+      description: Recording schedule mode.
+      required: true
+      selector:
+        select:
+          options:
+            - always
+            - schedule
+            - motion
+            - off
+
+soft_reset:
+  name: Soft Reset Camera
+  description: >
+    Reboot the camera. Configuration and recordings are preserved.
+    The camera will be unavailable for ~30 seconds while it restarts.
+  fields:
+    entity_id:
+      name: Camera entity
+      description: The camera to reboot.
+      required: true
+      selector:
+        entity:
+          domain: camera
+          integration: vigicam
+
+set_timezone:
+  name: Set Timezone
+  description: >
+    Set the camera's timezone. Use POSIX timezone strings such as
+    'GMT+05:30' for IST or 'GMT-8' for PST.
+  fields:
+    entity_id:
+      name: Camera entity
+      description: The camera to configure.
+      required: true
+      selector:
+        entity:
+          domain: camera
+          integration: vigicam
+    timezone:
+      name: Timezone
+      description: >
+        POSIX timezone string (e.g. 'GMT+05:30', 'GMT-5', 'GMT+0').
+        Note: POSIX sign convention is inverted — use GMT+05:30 for UTC+5:30.
+      required: true
+      selector:
+        text:
+
+ptz_cruise:
+  name: PTZ Cruise
+  description: >
+    Start or stop a PTZ cruise (auto-patrol) route on the camera.
+    The camera must have cruise routes configured in the VIGI app.
+  fields:
+    entity_id:
+      name: Camera entity
+      description: The camera to control.
+      required: true
+      selector:
+        entity:
+          domain: camera
+          integration: vigicam
+    action:
+      name: Action
+      description: Start or stop the cruise.
+      required: true
+      selector:
+        select:
+          options:
+            - start
+            - stop
+    cruise_id:
+      name: Cruise ID
+      description: Cruise route identifier (default 1).
+      selector:
+        number:
+          min: 1
+          max: 10
+          step: 1
+          mode: box
+
+save_preset:
+  name: Save PTZ Preset
+  description: >
+    Save the current PTZ position as a named preset. If a preset with
+    the given ID already exists it will be overwritten.
+  fields:
+    entity_id:
+      name: Camera entity
+      description: The PTZ camera.
+      required: true
+      selector:
+        entity:
+          domain: camera
+          integration: vigicam
+    preset_id:
+      name: Preset ID
+      description: Numeric ID for this preset (e.g. "1", "2").
+      required: true
+      selector:
+        text:
+    name:
+      name: Preset Name
+      description: Display name for this preset position.
+      required: true
+      selector:
+        text:
+
+delete_preset:
+  name: Delete PTZ Preset
+  description: Delete a saved PTZ preset position.
+  fields:
+    entity_id:
+      name: Camera entity
+      description: The PTZ camera.
+      required: true
+      selector:
+        entity:
+          domain: camera
+          integration: vigicam
+    preset_id:
+      name: Preset ID
+      description: Numeric ID of the preset to delete.
+      required: true
+      selector:
+        text:

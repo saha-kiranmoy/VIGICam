@@ -676,6 +676,124 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, "speak", handle_speak, schema=_SPEAK_SCHEMA)
     hass.services.async_register(DOMAIN, "play_file", handle_play_file, schema=_PLAY_FILE_SCHEMA)
 
+    # ── New OpenAPI services ──────────────────────────────────────────────────
+
+    async def handle_set_device_alias(call: ServiceCall) -> None:
+        data = _entry_data_for_entity(hass, call.data["entity_id"])
+        if not data or not data.get("openapi"):
+            _LOGGER.error("vigicam.set_device_alias: OpenAPI not available")
+            return
+        try:
+            await data["openapi"].set_device_alias(call.data["alias"])
+        except Exception as exc:
+            _LOGGER.error("vigicam.set_device_alias failed: %s", exc)
+
+    async def handle_search_system_log(call: ServiceCall) -> None:
+        data = _entry_data_for_entity(hass, call.data["entity_id"])
+        if not data or not data.get("openapi"):
+            _LOGGER.error("vigicam.search_system_log: OpenAPI not available")
+            return
+        try:
+            logs = await data["openapi"].search_system_log(
+                int(call.data["start_time"]),
+                int(call.data["end_time"]),
+                call.data.get("log_type", "all"),
+            )
+            _LOGGER.info("vigicam.search_system_log: %d entries returned", len(logs))
+        except Exception as exc:
+            _LOGGER.error("vigicam.search_system_log failed: %s", exc)
+
+    async def handle_set_record_schedule(call: ServiceCall) -> None:
+        data = _entry_data_for_entity(hass, call.data["entity_id"])
+        if not data or not data.get("openapi"):
+            _LOGGER.error("vigicam.set_record_schedule: OpenAPI not available")
+            return
+        try:
+            await data["openapi"].set_record_schedule({
+                "channel": 0,
+                "mode": call.data["mode"],
+            })
+            await data["coordinator"].async_request_refresh()
+        except Exception as exc:
+            _LOGGER.error("vigicam.set_record_schedule failed: %s", exc)
+
+    async def handle_soft_reset(call: ServiceCall) -> None:
+        data = _entry_data_for_entity(hass, call.data["entity_id"])
+        if not data or not data.get("openapi"):
+            _LOGGER.error("vigicam.soft_reset: OpenAPI not available")
+            return
+        try:
+            await data["openapi"].do_soft_reset()
+        except Exception as exc:
+            _LOGGER.error("vigicam.soft_reset failed: %s", exc)
+
+    async def handle_set_timezone(call: ServiceCall) -> None:
+        data = _entry_data_for_entity(hass, call.data["entity_id"])
+        if not data or not data.get("openapi"):
+            _LOGGER.error("vigicam.set_timezone: OpenAPI not available")
+            return
+        try:
+            await data["openapi"].set_timezone(call.data["timezone"])
+        except Exception as exc:
+            _LOGGER.error("vigicam.set_timezone failed: %s", exc)
+
+    async def handle_ptz_cruise(call: ServiceCall) -> None:
+        data = _entry_data_for_entity(hass, call.data["entity_id"])
+        if not data or not data.get("has_ptz") or not data.get("openapi"):
+            _LOGGER.error("vigicam.ptz_cruise: requires PTZ + OpenAPI")
+            return
+        try:
+            await data["openapi"].cruise_move(
+                cruise_id=int(call.data.get("cruise_id", 1)),
+                action=call.data["action"],
+            )
+        except Exception as exc:
+            _LOGGER.error("vigicam.ptz_cruise failed: %s", exc)
+
+    _ENTITY_SCHEMA = vol.Schema({vol.Required("entity_id"): cv.entity_id})
+
+    hass.services.async_register(
+        DOMAIN, "set_device_alias",
+        handle_set_device_alias,
+        schema=_ENTITY_SCHEMA.extend({vol.Required("alias"): cv.string}),
+    )
+    hass.services.async_register(
+        DOMAIN, "search_system_log",
+        handle_search_system_log,
+        schema=_ENTITY_SCHEMA.extend({
+            vol.Required("start_time"): vol.Coerce(int),
+            vol.Required("end_time"): vol.Coerce(int),
+            vol.Optional("log_type", default="all"): vol.In(
+                ["all", "alarm", "exception", "operation", "information"]
+            ),
+        }),
+    )
+    hass.services.async_register(
+        DOMAIN, "set_record_schedule",
+        handle_set_record_schedule,
+        schema=_ENTITY_SCHEMA.extend({
+            vol.Required("mode"): vol.In(["always", "schedule", "motion", "off"]),
+        }),
+    )
+    hass.services.async_register(
+        DOMAIN, "soft_reset",
+        handle_soft_reset,
+        schema=_ENTITY_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN, "set_timezone",
+        handle_set_timezone,
+        schema=_ENTITY_SCHEMA.extend({vol.Required("timezone"): cv.string}),
+    )
+    hass.services.async_register(
+        DOMAIN, "ptz_cruise",
+        handle_ptz_cruise,
+        schema=_ENTITY_SCHEMA.extend({
+            vol.Required("action"): vol.In(["start", "stop"]),
+            vol.Optional("cruise_id", default=1): vol.Coerce(int),
+        }),
+    )
+
 
 # ── Setup / teardown ──────────────────────────────────────────────────────────
 
