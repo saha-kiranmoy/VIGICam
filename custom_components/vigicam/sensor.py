@@ -196,6 +196,26 @@ OPENAPI_DEVICE_SENSORS: tuple[VIGISensorDescription, ...] = (
         entity_registry_enabled_default=False,
         value_fn=lambda d: _seconds_to_hours(d.get("openapi_device", {}).get("uptime")),
     ),
+    VIGISensorDescription(
+        key="stream_port",
+        name="RTSP Stream Port",
+        icon="mdi:video-wireless",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda d: d.get("openapi_stream_port", {}).get("rtsp_port"),
+    ),
+    VIGISensorDescription(
+        key="resolution",
+        name="Video Resolution",
+        icon="mdi:video-high-definition",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda d: (
+            f"{d['openapi_resolution']['width']}×{d['openapi_resolution']['height']}"
+            if d.get("openapi_resolution", {}).get("width")
+            else None
+        ),
+    ),
 )
 
 
